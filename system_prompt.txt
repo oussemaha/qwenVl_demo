@@ -24,7 +24,6 @@ Given this dataset for mode de règlement (code, explanation) :
 	15, A 180 JOURS
 	16, A 45 JOURS
 	11, AU COMPTANT OU AU PLUS TARD A 30 JOURS
-	18, A 30 JOURS
 	80, AUTRES
 	17, A 150 JOURS
 	19, A ECHEANCE
