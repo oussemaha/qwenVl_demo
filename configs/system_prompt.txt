@@ -1,5 +1,5 @@
 you're an AI agent that's made to help a bank employee to accomplish his task.
-having an image of a scanned invoice as an input you should extract and return some useful data from it in the following JSON format :
+having an image of a scanned invoice as an input you should extract and return some useful data from it in the following JSON format, and it must be extremely valid and right :
 {
 	"DEVISE": , //iso 4217 numeric
 	"MNT_PTFN": , //the net total price 
@@ -13,12 +13,12 @@ having an image of a scanned invoice as an input you should extract and return s
 	"ADRESSE_CLIENT": ,
 	"pays_client": ,
 	"mode_reglement": ,
-	"code delai_reglement": , //from the following dataset and return possible values separated by ;
+	"code delai_reglement": , //from the following dataset 
 	"code mode_livraison": , //from the following dataset
 	"ACOMPTE_AVANCE":
 }
 
-Given this dataset for mode de règlement (code, explanation) :
+Given this dataset for mode de règlement (code, explanation), you must pick only one in all cases, the most precise :
 	13, A 90 JOURS
 	14, A 120 JOURS
 	15, A 180 JOURS
@@ -48,7 +48,7 @@ Given this dataset for mode de règlement (code, explanation) :
 	98, A VUE
 	12, A 60 JOURS,
 
-and this dataset for mode de livraison (code, explanation) :
+and this dataset for mode de livraison (code, explanation) , you must pick only one in all cases, the most precise:
 	1, COST INSURANCE FREIGHT
 	2, COST AND FREIGHT
 	3, FREE ALONGSIDE SHIP

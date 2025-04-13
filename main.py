@@ -1,12 +1,12 @@
-from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
-from qwen_vl_utils import process_vision_info
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from src.featureExtraction.llm_extraction import extract_data_QWEN
+from src.classification.unzipInput import unzip_file
+from src.classification.ocr_classification import organize_invoices
+from configs.constants import *
 import torch
 
 import gradio as gr
-from constants import *
 
-import json
 
 
 model = Qwen2VLForConditionalGeneration.from_pretrained(
@@ -19,8 +19,9 @@ processor = AutoProcessor.from_pretrained(MODEL_NAME)
 
 def main(zip_file):
     unzip_file(zip_file)
-    organize_invoices(TEMP_DIR)
-    return {"status": "success", "message": "Files organized successfully."}
+    invoice_list=organize_invoices(TEMP_DIR)
+    result=extract_data_QWEN(invoice_list,model,processor)
+    return result
 
 
 def greet(name,file):
@@ -29,7 +30,7 @@ def greet(name,file):
 
 demo = gr.Interface(
     fn=main,  # Function to call
-    inputs=gr.File(label="Upload ZIP file", file_types=[".zip"]),  # Input: Image (as PIL image)
+    inputs= gr.File(label="ZIP File", type="binary"),  # Input: Image (as PIL image)
     outputs=gr.JSON(label="Output JSON"),  # Output: JSON
     title="Invoice to JSON Processor",
     description="Upload an image of the invoice and get the content as JSON."

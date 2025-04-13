@@ -1,6 +1,7 @@
-from transformers import Qwen2VLForConditionalGeneration, AutoTokenizer, AutoProcessor
 from qwen_vl_utils import process_vision_info
-import torch
+from configs.constants import SYSTEM_PROMPT_PATH
+import json
+from PIL import Image
 
 def read_file_to_string(file_path:str):
     try:
@@ -12,8 +13,23 @@ def read_file_to_string(file_path:str):
     except Exception as e:
         return f"An error occurred: {e}"
 
-def extract_data_QWEN(files):
+def extract_data_QWEN(images,model,processor):
     sys_prompt=read_file_to_string(SYSTEM_PROMPT_PATH)
+    message_content = [
+        {
+            "type": "text",
+            "text": "Describe these images:"  # Optional text prompt
+        }
+    ]
+    message_content = []
+    # Add images using a for loop
+    for img in images:
+        pil_img = Image.fromarray(img)
+        message_content.append({
+            "type": "image",
+            "image": pil_img  # Convert to RGB PIL Image
+        })
+
     messages = [
         {
             "role": "system",
@@ -26,11 +42,7 @@ def extract_data_QWEN(files):
         },
         {
             "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "image": files,
-                }            ],
+            "content": message_content,
         }
     ]
     text = processor.apply_chat_template(
@@ -45,7 +57,7 @@ def extract_data_QWEN(files):
         return_tensors="pt",
     )
     inputs = inputs.to("cuda")
-    generated_ids = model.generate(**inputs, max_new_tokens=256)
+    generated_ids = model.generate(**inputs, max_new_tokens=600)
     generated_ids_trimmed = [
         out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
     ]
@@ -56,6 +68,7 @@ def extract_data_QWEN(files):
     result=result[0]        
     result.replace('\n','')
     result.replace('\t','')
+    print(result)
 
     result=result[result.find('{'):result.find('}')+1]
     result=json.loads(result)

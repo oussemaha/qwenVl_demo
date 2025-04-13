@@ -5,28 +5,11 @@ import fitz
 from Levenshtein import distance
 from pathlib import Path
 import numpy as np
-
+import os 
+import shutil
+from configs.constants import UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS
 # Universal invoice keywords (supports 20+ languages)
-UNIVERSAL_KEYWORDS = [
-    # English, French, Spanish, Italian, German
-    "invoice", "bill", "total", "payment", "amount", "order",
-    "facture", "devis", "paiement", "montant",  # French
-    "fattura", "ricevuta", "pagamento", "importo","IVA"  # Italian
-    "rechnung", "quittung", "zahlung", "betrag",  # German
-    "factura", "recibo", "pago", "importe",  # Spanish
-    # Arabic (فاتورة, إيصال, etc.)
-    "فاتورة", "إيصال", "دفع", "المبلغ", 
-]
 
-# Universal regex patterns (amounts, dates, invoice numbers)
-UNIVERSAL_PATTERNS = [
-    r"\d+[\.,]\d{2}\s*(USD|EUR|€|¥|£|ريال|دينار)",  # Amounts
-    r"\d{2}[/\-\.]\d{2}[/\-\.]\d{4}",  # Dates (DD/MM/YYYY)
-    r"(invoice|facture|fattura|rechnung|فاتورة)\s*#?\s*[\d-]+",  # Invoice numbers
-    r"(total|totale|gesamtbetrag|المبلغ)\s*[:=]?\s*\d+",  # Total fields
-    r"order\s*(confirmation|no\.?)\s*[\d-]+",  # Order numbers
-    r"customer\s*(no\.?|number)\s*[\d-]+",  # Customer numbers
-]
 def open_file_as_image(file_path):
     """
     Opens a file (PDF or image) and returns it as a NumPy array.
@@ -112,7 +95,7 @@ def is_invoice(image_path: str, min_text_length: int = 50, keyword_threshold: in
     # Read image
     image = open_file_as_image(image_path)
     if image is None:
-        return False
+        return False,image
 
     # Extract text (auto-detects language and orientation)
     try:
@@ -120,11 +103,11 @@ def is_invoice(image_path: str, min_text_length: int = 50, keyword_threshold: in
         extracted_text = extract_text_from_easyocr(results)
     except Exception as e:
         print(f"OCR processing failed: {e}")
-        return False
+        return False,image
 
     # Rule 1: Minimum text check
     if len(extracted_text) < min_text_length:
-        return False
+        return False,image
 
     normalized_text = extracted_text.lower()
     
@@ -149,9 +132,9 @@ def is_invoice(image_path: str, min_text_length: int = 50, keyword_threshold: in
     )
     
     print("has_invoice_patterns ",has_invoice_patterns)
-    print("has_invoice_structure ",has_invoice_structure)
+    #print("has_invoice_structure ",has_invoice_structure)
     print("keyword_count ",keyword_count)
-    return (keyword_count) >= keyword_threshold or has_invoice_patterns 
+    return (keyword_count) >= keyword_threshold or has_invoice_patterns , image
 
 def organize_invoices(root_folder):
     """
@@ -159,14 +142,14 @@ def organize_invoices(root_folder):
     while preserving the original folder structure.
     """
     root_path = Path(root_folder)
-    
+    invoice_list=[]
     # Walk through all files in the directory tree
     for folder_path, _, filenames in os.walk(root_folder):
         folder_path = Path(folder_path)
-        invoices_subfolder = folder_path / "Invoices"
+        #invoices_subfolder = folder_path / "Invoices"
         
         # Create invoices subfolder if it doesn't exist
-        invoices_subfolder.mkdir(exist_ok=True)
+        #invoices_subfolder.mkdir(exist_ok=True)
         
         for filename in filenames:
             print(filename)
@@ -175,8 +158,10 @@ def organize_invoices(root_folder):
             # Skip files already in an "Invoices" folder
             if "Invoices" in file_path.parts:
                 continue
-                
-            if is_invoice(file_path):
+            result,image=is_invoice(file_path)
+            if result:
+                """"
+                #putting in an INVOICES dir
                 # Construct destination path
                 dest_path = invoices_subfolder / filename
                 
@@ -188,6 +173,16 @@ def organize_invoices(root_folder):
                     dest_path = invoices_subfolder / f"{stem}_{counter}{suffix}"
                     counter += 1
                 
-                # Move the file
+                #Move the file
                 shutil.move(str(file_path), str(dest_path))
                 print(f"Moved invoice: {file_path} -> {dest_path}")
+                """
+                #create list 
+                invoice_list.append(image)
+    #  delete the root folder 
+    try:
+        shutil.rmtree(root_folder)
+        deletion_status = f"Successfully deleted folder: {root_folder}"
+    except Exception as e:
+        deletion_status = f"Error deleting folder {root_folder}: {str(e)}"
+    return invoice_list
