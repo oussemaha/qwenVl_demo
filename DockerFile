@@ -1,0 +1,47 @@
+# Start from a slim Ubuntu base with Conda pre-installed
+FROM continuumio/miniconda3:latest
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=off \
+    PIP_DISABLE_PIP_VERSION_CHECK=on \
+    DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    git \
+    libgl1 \
+    libglib2.0-0 \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY environment.yml .
+
+# Create and activate Conda environment
+RUN conda env create -f environment.yml
+ENV PATH /opt/conda/envs/qwen2/bin:$PATH
+RUN echo "conda activate qwen2" >> ~/.bashrc
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements files
+COPY requirements.txt .
+
+# Install packages (prefer conda where possible, then pip)
+RUN /bin/bash -c "python -m spacy download en_core_web_md"
+
+# Copy project files
+COPY . .
+COPY ../Qwen2-VL-7B-Instruct/ /Qwen2-VL-7B-Instruct
+
+# Expose port 7860
+EXPOSE 7860
+
+# Command to run (modify as needed)
+CMD ["python", "main.py"]
+
+

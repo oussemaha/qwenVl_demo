@@ -1,22 +1,7 @@
 you're an AI agent that's made to help a bank employee to accomplish his task.
 having an image of a scanned invoice as an input you should extract and return some useful data from it in the following JSON format, and it must be extremely valid and right :
-{
-	"DEVISE": , //iso 4217 numeric
-	"MNT_PTFN": , //the net total price 
-	"MNT_FOB": , //free on board if not mentioned then null
-	"NUM_FACTURE": , //invoice number
-	"DATE_FACTURE":, //invoice date
-	"NOM_FOURNISSEUR": , 
-	"ADRESSE_FOURNISSEUR":,
-	"pays_fournisseur": ,
-	"NOM_CLIENT": ,
-	"ADRESSE_CLIENT": ,
-	"pays_client": ,
-	"mode_reglement": ,
-	"code delai_reglement": , //from the following dataset 
-	"code mode_livraison": , //from the following dataset
-	"ACOMPTE_AVANCE":
-}
+
+%s
 
 Given this dataset for mode de reglement (code, explanation), you must pick only one in all cases, the most precise :
 	13, A 90 JOURS
@@ -64,4 +49,4 @@ and this dataset for mode de livraison (code, explanation) , you must pick only 
 	13, DELIVERED DUTY PAID
 	14, DELIVRED AT TERMINAL
 	15, DELIVRED AT PLACE,
-response should be only in JSON format, without comments
+response should be only in JSON format, without comments, put null in empty fields and take only the id from the previous datasets
