@@ -225,6 +225,7 @@ class Classifier :
                     #create list 
                     invoice_list.append(image)
         #  delete the root folder 
+        
         try:
             shutil.rmtree(root_folder)
             deletion_status = f"Successfully deleted folder: {root_folder}"
@@ -279,14 +280,30 @@ class Classifier :
             results = reader.readtext_batched(padded_images, batch_size=len(padded_images),paragraph=False)
 
             batch_output = []
+            
             for img, path, ocr_results in zip(images,valid_paths, results):
                 extracted_text = " ".join([res[1] for res in ocr_results if len(res) >= 2])
+                print(path)
                 if self.is_invoice_without_ocr(extracted_text) :
                     print(path)
-                    batch_output.append(img)
+                    batch_output.append(path)
 
             return batch_output
 
         except Exception as e:
             print(e)
             return []
+    def organize_invoices_para_temp(self, root_folder):
+
+        invoice_list=[]
+        for folder_path, _, filenames in os.walk(root_folder):
+            folder_path = Path(folder_path)
+
+            for i in range(len(filenames)):
+                filenames[i] = root_folder / filenames[i]
+            invoice_list.extend(self.process_batch(filenames))
+            print("invoice_list",invoice_list)
+        return invoice_list
+        #  delete the root folder 
+
+  

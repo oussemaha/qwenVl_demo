@@ -1,21 +1,21 @@
-import json
-import spacy
-from dateutil.parser import parse
-from typing import Dict, Any, Union
-
 
 import json
 import spacy
 from dateutil.parser import parse
 from typing import Dict, Any
 
+
+
 class JSONComparator:
+    
     def __init__(self, 
+                 llm_extractor,
                  nlp_model: str = "en_core_web_md",
                  text_similarity_threshold: float = 0.8):
         """
         Initialize with enhanced text comparison handling.
         """
+        self.llm_extractor = llm_extractor
         try:
             self.nlp = spacy.load(nlp_model)
         except OSError:
@@ -28,16 +28,9 @@ class JSONComparator:
         """Check if document has valid word vectors"""
         return any(token.has_vector for token in doc)
 
-    def compare_text(self, text1: str, text2: str) -> bool:
-        """Safe text comparison with vector checking"""
-        doc1 = self.nlp(text1)
-        doc2 = self.nlp(text2)
-        
-        # Fallback to strict comparison if no vectors
-        if not self._has_vectors(doc1) or not self._has_vectors(doc2):
-            return text1.lower().strip() == text2.lower().strip()
-            
-        return doc1.similarity(doc2) >= self.text_sim_threshold
+    def compare_text(self,text1: str, text2: str) -> bool:
+    
+        return self.llm_extractor.llm_compare_texts(text1, text2)
 
     def is_date(self, value: Any) -> bool:
         """Check if value is a parseable date string."""
@@ -68,8 +61,14 @@ class JSONComparator:
 
     def compare_jsons(self, json1: Dict[str, Any], json2: Dict[str, Any]) -> Dict[str, bool]:
         """Compare two JSON objects field-by-field"""
-        return {key: self.compare_values(json1.get(key), json2.get(key)) 
+        json2["REF_CONTRAT"]= json1["REF_CONTRAT"]
+        comp= {key: self.compare_values(json1.get(key), json2.get(key)) 
                 for key in json1}
+        if "BUYER_ADDRESS" in comp and  not comp["BUYER_ADDRESS"]:
+            comp["BUYER_ADDRESS"]=self.compare_text(json1["BUYER_ADDRESS"], json2["BUYER_COUNTRY"])
+        if "SELLER_ADDRESS" in comp and not comp["SELLER_ADDRESS"]:
+            comp["SELLER_ADDRESS"]=self.compare_text(json1["SELLER_ADDRESS"], json2["SELLER_COUNTRY"])
+        return comp
         
 # Example Usage
 if __name__ == "__main__":

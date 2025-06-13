@@ -1,5 +1,6 @@
 MODEL_NAME="/home/ubuntu/Qwen2-VL-7B-Instruct"
-SYSTEM_PROMPT_PATH="./configs/system_prompt_formatted.txt"
+#MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct"
+SYSTEM_PROMPT_PATH="./configs/system_prompt1.txt"
 TEMP_DIR="./TEMP"
 CLASSIFICATION_GPU=True
 CLASSIFICATION_KEYWORD_THRESHOLD=3

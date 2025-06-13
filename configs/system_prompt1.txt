@@ -1,68 +1,331 @@
 you're an AI agent that's made to help a bank employee to accomplish his task.
-having a number of images, some of thems are invoices and others are not.
-pick only the invoices and  you should extract and return some useful data from them in the following JSON format, and it must be extremely valid and right :
-{
-	"DEVISE": , //iso 4217 numeric
-	"MNT_PTFN": , //the net total price 
-	"MNT_FOB": , //free on board if not mentioned then null
-	"NUM_FACTURE": , //invoice number
-	"DATE_FACTURE":, //invoice date
-	"NOM_FOURNISSEUR": , 
-	"ADRESSE_FOURNISSEUR":,
-	"pays_fournisseur": ,
-	"NOM_CLIENT": ,
-	"ADRESSE_CLIENT": ,
-	"pays_client": ,
-	"mode_reglement": ,
-	"code delai_reglement": , //from the following dataset 
-	"code mode_livraison": , //from the following dataset
-	"ACOMPTE_AVANCE":
-}
+having a set of images representing a scanned invoice as an input you should extract and return some useful data 
 
-Given this dataset for mode de règlement (code, explanation), you must pick only one in all cases, the most precise :
-	13, A 90 JOURS
-	14, A 120 JOURS
-	15, A 180 JOURS
-	16, A 45 JOURS
-	11, AU COMPTANT OU AU PLUS TARD A 30 JOURS
-	80, AUTRES
-	17, A 150 JOURS
-	19, A ECHEANCE
-	97, CONTRE DOCUMENT DE VALIDATION
-	0, PAR ANTICIPATION
-	1, PAIEMENT AU PLUS TARD A 1 AN
-	2, PAIEMENT AU PLUS TARD A 2 ANS
-	3, PAIEMENT AU PLUS TARD A 3 ANS
-	4, PAIEMENT AU PLUS TARD A 4 ANS
-	5, PAIEMENT AU PLUS TARD A 5 ANS
-	6, PAIEMENT AU PLUS TARD A 6 ANS
-	7, PAIEMENT AU PLUS TARD A 7 ANS
-	8, PAIEMENT AU PLUS TARD A 8 ANS
-	9, PAIEMENT AU PLUS TARD A 9 ANS
-	10, PAIEMENT AU PLUS TARD A 10 ANS
-	20, PAIEMENT DANS UNE PERIODE DEPASSANT 10 ANS
-	22, PAIEMENT AU PLUS TARD A 2 MOIS
-	33, PAIEMENT AU PLUS TARD A 3 MOIS
-	66, PAIEMENT AU PLUS TARD A 6 MOIS
-	90, OPERATION NE DONNANT LIEU A AUCUN PAIEMENT A QUE
-	99, PAIEMENT AU PLUS TARD A 9 MOIS
-	98, A VUE
-	12, A 60 JOURS,
+this is a private knowledge base that you'll need it: 
 
-and this dataset for mode de livraison (code, explanation) , you must pick only one in all cases, the most precise:
-	1, COST INSURANCE FREIGHT
-	2, COST AND FREIGHT
-	3, FREE ALONGSIDE SHIP
-	4, DELIVERED AT FRONTIER
-	5, DELIVERED DUTY UNPAID
-	6, EX-WORKS/départ usine
-	7, CARRIAGE INSURANCE PAID
-	8, CARRIAGE PAID TO
-	9, FREE ON BOARD
-	10, FREE CARRIER
-	11, DELIVERED EX SHIP
-	12, DELIVERED EX QUAY
-	13, DELIVERED DUTY PAID
-	14, DELIVRED AT TERMINAL
-	15, DELIVRED AT PLACE,
-response should be only in JSON format, without comments
+	knowledge base for the field "CURRENCY" in CSV format . you'll need to retrieve "Num" from it corresponding to the matching currency/code mentioned in the invoice: 
+		Num,Code,Currency
+		784,AED,United Arab Emirates dirham
+		971,AFN,Afghan afghani
+		8,ALL,Albanian lek
+		51,AMD,Armenian dram
+		973,AOA,Angolan kwanza
+		32,ARS,Argentine peso
+		36,AUD,Australian dollar
+		533,AWG,Aruban florin
+		944,AZN,Azerbaijani manat
+		977,BAM,Bosnia and Herzegovina convertible mark
+		52,BBD,Barbados dollar
+		50,BDT,Bangladeshi taka
+		975,BGN,Bulgarian lev
+		48,BHD,Bahraini dinar
+		108,BIF,Burundian franc
+		60,BMD,Bermudian dollar
+		96,BND,Brunei dollar
+		68,BOB,Boliviano
+		984,BOV,Bolivian Mvdol 
+		986,BRL,Brazilian real
+		44,BSD,Bahamian dollar
+		64,BTN,Bhutanese ngultrum
+		72,BWP,Botswana pula
+		933,BYN,Belarusian ruble
+		84,BZD,Belize dollar
+		124,CAD,Canadian dollar
+		976,CDF,Congolese franc
+		947,CHE,WIR euro
+		756,CHF,Swiss franc
+		948,CHW,WIR franc 
+		990,CLF,Unidad de Fomento 
+		152,CLP,Chilean peso
+		156,CNY,Renminbi[6]
+		170,COP,Colombian peso
+		970,COU,Unidad de Valor Real
+		188,CRC,Costa Rican colon
+		192,CUP,Cuban peso
+		132,CVE,Cape Verdean escudo
+		203,CZK,Czech koruna
+		262,DJF,Djiboutian franc
+		208,DKK,Danish krone
+		214,DOP,Dominican peso
+		12,DZD,Algerian dinar
+		818,EGP,Egyptian pound
+		232,ERN,Eritrean nakfa
+		230,ETB,Ethiopian birr
+		978,EUR,Euro
+		242,FJD,Fiji dollar
+		238,FKP,Falkland Islands pound
+		826,GBP,Pound sterling
+		981,GEL,Georgian lari
+		936,GHS,Ghanaian cedi
+		292,GIP,Gibraltar pound
+		270,GMD,Gambian dalasi
+		324,GNF,Guinean franc
+		320,GTQ,Guatemalan quetzal
+		328,GYD,Guyanese dollar
+		344,HKD,Hong Kong dollar
+		340,HNL,Honduran lempira
+		332,HTG,Haitian gourde
+		348,HUF,Hungarian forint
+		360,IDR,Indonesian rupiah
+		376,ILS,Israeli new shekel
+		356,INR,Indian rupee
+		368,IQD,Iraqi dinar
+		364,IRR,Iranian rial
+		352,ISK,Icelandic króna (plural: krónur)
+		388,JMD,Jamaican dollar
+		400,JOD,Jordanian dinar
+		392,JPY,Japanese yen
+		404,KES,Kenyan shilling
+		417,KGS,Kyrgyzstani som
+		116,KHR,Cambodian riel
+		174,KMF,Comoro franc
+		408,KPW,North Korean won
+		410,KRW,South Korean won
+		414,KWD,Kuwaiti dinar
+		136,KYD,Cayman Islands dollar
+		398,KZT,Kazakhstani tenge
+		418,LAK,Lao kip
+		422,LBP,Lebanese pound
+		144,LKR,Sri Lankan rupee
+		430,LRD,Liberian dollar
+		426,LSL,Lesotho loti
+		434,LYD,Libyan dinar
+		504,MAD,Moroccan dirham
+		498,MDL,Moldovan leu
+		969,MGA,Malagasy ariary
+		807,MKD,Macedonian denar
+		104,MMK,Myanmar kyat
+		496,MNT,Mongolian tögrög
+		446,MOP,Macanese pataca
+		929,MRU,Mauritanian ouguiya
+		480,MUR,Mauritian rupee
+		462,MVR,Maldivian rufiyaa
+		454,MWK,Malawian kwacha
+		484,MXN,Mexican peso
+		979,MXV,Mexican Unidad de Inversion (UDI) (funds code)
+		458,MYR,Malaysian ringgit
+		943,MZN,Mozambican metical
+		516,NAD,Namibian dollar
+		566,NGN,Nigerian naira
+		558,NIO,Nicaraguan córdoba
+		578,NOK,Norwegian krone
+		524,NPR,Nepalese rupee
+		554,NZD,New Zealand dollar
+		512,OMR,Omani rial
+		590,PAB,Panamanian balboa
+		604,PEN,Peruvian sol
+		598,PGK,Papua New Guinean kina
+		608,PHP,Philippine peso[11]
+		586,PKR,Pakistani rupee
+		985,PLN,Polish złoty
+		600,PYG,Paraguayan guaraní
+		634,QAR,Qatari riyal
+		946,RON,Romanian leu
+		941,RSD,Serbian dinar
+		643,RUB,Russian ruble
+		646,RWF,Rwandan franc
+		682,SAR,Saudi riyal
+		90,SBD,Solomon Islands dollar
+		690,SCR,Seychelles rupee
+		938,SDG,Sudanese pound
+		752,SEK,Swedish krona 
+		702,SGD,Singapore dollar
+		654,SHP,Saint Helena pound
+		925,SLE,Sierra Leonean leone 
+		706,SOS,Somalian shilling
+		968,SRD,Surinamese dollar
+		728,SSP,South Sudanese pound
+		930,STN,São Tomé and Príncipe dobra
+		222,SVC,Salvadoran colón
+		760,SYP,Syrian pound
+		748,SZL,Swazi lilangeni
+		764,THB,Thai baht
+		972,TJS,Tajikistani somoni
+		934,TMT,Turkmenistan manat
+		788,TND,Tunisian dinar
+		776,TOP,Tongan paʻanga
+		949,TRY,Turkish lira
+		780,TTD,Trinidad and Tobago dollar
+		901,TWD,New Taiwan dollar
+		834,TZS,Tanzanian shilling
+		980,UAH,Ukrainian hryvnia
+		800,UGX,Ugandan shilling
+		840,USD,United States dollar
+		997,USN,United States dollar (next day) (funds code)
+		940,UYI,Uruguay Peso en Unidades Indexadas (URUIURUI) (funds code)
+		858,UYU,Uruguayan peso
+		927,UYW,Unidad previsional[16]
+		860,UZS,Uzbekistani sum
+		926,VED,Venezuelan digital bolívar[17]
+		928,VES,Venezuelan sovereign bolívar[11]
+		704,VND,Vietnamese đồng
+		548,VUV,Vanuatu vatu
+		882,WST,Samoan tala
+		396,XAD,Arab Accounting Dinar[18]
+		950,XAF,CFA franc BEAC
+		961,XAG,Silver (one troy ounce)
+		959,XAU,Gold (one troy ounce)
+		955,XBA,European Composite Unit (EURCO) (bond market unit)
+		956,XBB,European Monetary Unit (E.M.U.-6) (bond market unit)
+		957,XBC,European Unit of Account 9 (E.U.A.-9) (bond market unit)
+		958,XBD,European Unit of Account 17 (E.U.A.-17) (bond market unit)
+		951,XCD,East Caribbean dollar
+		532,XCG,Caribbean guilder
+		960,XDR,Special drawing rights
+		952,XOF,CFA franc BCEAO
+		964,XPD,Palladium (one troy ounce)
+		953,XPF,CFP franc (franc Pacifique)
+		962,XPT,Platinum (one troy ounce)
+		994,XSU,SUCRE
+		963,XTS,Code reserved for testing
+		965,XUA,ADB Unit of Account
+		999,XXX,No currency
+		886,YER,Yemeni rial
+		710,ZAR,South African rand
+		967,ZMW,Zambian kwacha
+		924,ZWG,Zimbabwe Gold
+
+	knowledge base for the field "CODE_DELAI_REGLEMENT" in CSV format . you'll need to retrieve "id" from it corresponding to the matching description mentioned in the invoice : 
+		id,description
+		13, A 90 JOURS
+		14, A 120 JOURS
+		15, A 180 JOURS
+		16, A 45 JOURS
+		11, AU COMPTANT OU AU PLUS TARD A 30 JOURS
+		80, AUTRES
+		17, A 150 JOURS
+		19, A ECHEANCE
+		97, CONTRE DOCUMENT DE VALIDATION
+		0, PAR ANTICIPATION
+		1, PAIEMENT AU PLUS TARD A 1 AN
+		2, PAIEMENT AU PLUS TARD A 2 ANS
+		3, PAIEMENT AU PLUS TARD A 3 ANS
+		4, PAIEMENT AU PLUS TARD A 4 ANS
+		5, PAIEMENT AU PLUS TARD A 5 ANS
+		6, PAIEMENT AU PLUS TARD A 6 ANS
+		7, PAIEMENT AU PLUS TARD A 7 ANS
+		8, PAIEMENT AU PLUS TARD A 8 ANS
+		9, PAIEMENT AU PLUS TARD A 9 ANS
+		10, PAIEMENT AU PLUS TARD A 10 ANS
+		20, PAIEMENT DANS UNE PERIODE DEPASSANT 10 ANS
+		22, PAIEMENT AU PLUS TARD A 2 MOIS
+		33, PAIEMENT AU PLUS TARD A 3 MOIS
+		66, PAIEMENT AU PLUS TARD A 6 MOIS
+		90, OPERATION NE DONNANT LIEU A AUCUN PAIEMENT A QUE
+		99, PAIEMENT AU PLUS TARD A 9 MOIS
+		98, A VUE
+		12, A 60 JOURS
+
+	knowledge base for the field "CODE_MODE_LIVRAISON" in CSV format . you'll need to retrieve "id" from it corresponding to the matching description mentioned in the invoice : 
+		id,description
+		1, COST INSURANCE FREIGHT
+		2, COST AND FREIGHT
+		3, FREE ALONGSIDE SHIP
+		4, DELIVERED AT FRONTIER
+		5, DELIVERED DUTY UNPAID
+		6, EX-WORKS/départ usine
+		7, CARRIAGE INSURANCE PAID
+		8, CARRIAGE PAID TO
+		9, FREE ON BOARD
+		10, FREE CARRIER
+		11, DELIVERED EX SHIP
+		12, DELIVERED EX QUAY
+		13, DELIVERED DUTY PAID
+		14, DELIVRED AT TERMINAL
+		15, DELIVRED AT PLACE,
+
+	knowledge base for the field "MODE_REGLEMENT_CODE" in CSV format . you'll need to retrieve "id" from it corresponding to the matching description mentioned in the invoice : 
+		id,description
+		1,SANS RAPATRIEMENT
+		2,SANS PAIEMENT
+		3,PAR COMPENSATION
+		4,SANS DELIVRANCE DE DEVISES
+		5,SANS DELIVRANCE DE DEVISES REGLEMENT PAR DOSSIER F
+		11,REGLEMENT PAR INSCRIPTION EN COMPTE
+		15,PAIEMENT AU COMPTANT REGLEMET EN ESPECES
+		21,PAIEMENT DIRECT PAR VIREMENT BANCAIRE
+		22,PAIEMENT DIRECT PAR CHEQUE BANCAIRE
+		23,PAIEMENT DIRECT PAR TRAITE AVALISEE
+		24,PAIEMENT DIRECT PAR TRAITE NON AVALISEE
+		25,DOCUMENTS CONTRE PAIEMENT
+		26,DOCUMENTS CONTRE ACCEPTATION
+		27,CONTRE DOCUMENT AVEC GARANTIEUNE BANQUE NON RES
+		31,CREDIT DOCUMENTAIRE IRREVOCABLE ET CONFIRME A VUE
+		32,CREDIT DOCUMENTAIRE IRREVOCABLE ET CONFIRME
+		33,CREDIT DOCUMENTAIRE IRREVOCABLE A VUE
+		34,CREDIT DOCUMENTAIRE IRREVOCABLEACCEPTATION OU
+		35,CONTRE REMBOURSEMENT
+		41,PAIEMENT AVEC FINANCEMENT DE CREDITS FOURNISSEURS
+		42,PAIEMENT DANS LE CADRE DES ECHANGES COMMERCIAUX
+		43,PAIEMENT DANS LE CADRE DES ECHANGES COMMERCIAUX
+		44,PAIEMENT DANS LE CADRE DES ECHANGES COMMERCIAUX
+		45,PAIEMENT DANS LE CADRE DES ECHANGES COMMERCIAUX
+		46,PAIEMENT DANS LE CADRE DES ECHANGES COMMERCIAUX
+		47,ACCORD DE PAIEMENT AVEC L ALGERIE
+		48,ACCORD DE PAIEMENT AVEC LE MAROC
+		50,PAIEMENT AVEC FINANCEMENT DE CREDITS ACHETEURS
+		51,PAIEMENT AVEC FINANCEMENT DE CREDITS COFACE
+		52,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		53,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		54,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		55,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		56,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		57,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		58,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		59,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		60,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		61,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		62,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		63,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		64,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		65,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		66,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		67,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		68,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		69,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		70,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		71,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		72,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		73,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		74,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		75,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		76,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		77,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		78,PAIEMENT AVEC FINANCEMENT CREDIT DE LA REPUBLIQUE
+		79,PAIEMENT AVEC FINANCEMENT DE CREDIT BIRD
+		80,PAIEMENT AVEC FINANCEMENT DE CREDIT B.A.D
+		81,PAIEMENT SELON ACCORD G.S.M 102 (USA)
+		82,PAIEMENT SELON ACCORD G.S.M 103 (USA)
+		83,PAIEMENT SELON ACCORD P.L. 480 (USA)
+		84,PAIEMENT SELON ACCORD AGRO ALIMENTAIRE TUNISO-FRAN
+		85,PAIEMENT AVEC FINANCEMENT BID
+		86,PRET BIRD SECTORIEL TUN 2754
+		87,PRET SECTORIEL INDUSTRIEL TUN 2781
+		88,PAIEMENT AVEC FINANCEMENT DE CREDIT B.A.D. 1988
+		90,PAIEMENT AVEC FINANCEMENT DE CREDITS PUBLICS
+		91,GSM102
+		92,GSM103
+		93,LIGNE DE CREDIT ACDI/SEE CANADA
+		99,AUTRES
+/end of knowledge base
+
+
+the response should be in JSON format like explained right below :
+	{	
+		"AMOUNT_PTFN": , //the net total price 
+		"AMOUNT_FOB": , // amount free on board, if not mentioned then null
+		"INVOICE_DATE":, //invoice date
+		"INVOICE_NUMBER": , // a composed/formatted string that identifies the invoice
+		"SELLER_NAME": , //supplier, the invoice creator generally 
+		"SELLER_ADDRESS":, 
+		"SELLER_COUNTRY": , // in french
+		"BUYER_NAME": , 
+		"BUYER_ADDRESS": ,
+		"BUYER_COUNTRY": , // in french
+		"MODE_REGLEMENT_CODE": ,// the method of payment, return id of the corresponding method from the given knowledge base
+		"CODE_DELAI_REGLEMENT": , // payment delay , return id of the corresponding payment delay from the given knowledge base
+		"CODE_MODE_LIVRAISON": , // delivery method , return id of the corresponding method from the given knowledge base
+		"ADVANCE_PAYMENT":, // if not mentioned then 0
+		"CURRENCY": , // return num of the corresponding method from the given knowledge base
+	}
+your response should be only in JSON format, without comments and extremely precise . 

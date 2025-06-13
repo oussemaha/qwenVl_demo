@@ -1,4 +1,4 @@
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor,AutoModelForVision2Seq
+from transformers import AutoModelForImageTextToText,Qwen2VLForConditionalGeneration, AutoProcessor,AutoModelForVision2Seq
 import torch
 
 from qwen_vl_utils import process_vision_info
@@ -45,9 +45,50 @@ class LLM_extractor:
                 except:
                     "none"
         return result
+    def llm_compare_texts(self,text1,text2):
+        messages = [
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text":"you're an expert in text comparison, compare the two texts and return a boolean value indicating whether they are similar or not. don't be too strict. return only True or False."
+                    }
+                ]
+            },
+            {
+                "role": "user",
+                "content":"compare these two texts:\n\nText 1: %s\n\nText 2: %s" % (text1, text2)
+            }
+        ]
+        text = self.processor.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+        image_inputs, video_inputs = process_vision_info(messages)
+        inputs = self.processor(
+            text=[text],
+            images=image_inputs,
+            videos=video_inputs,
+            padding=True,
+            return_tensors="pt",
+        )
+        inputs = inputs.to("cuda")
+        generated_ids = self.model.generate(**inputs, max_new_tokens=600)
+        generated_ids_trimmed = [
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+        ]
+        result = self.processor.batch_decode(
+            generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
+        )
+        result=result[0]
+        return bool(result.strip().lower() == "true")  # Assuming the model returns "True" or "False"        
     
     def extract_data(self,images, response_format):
-        sys_prompt=self.read_file_to_string(self.prompt_file_path) % response_format
+        sys_prompt=self.read_file_to_string(self.prompt_file_path) 
+        try:
+            sys_prompt= sys_prompt %  response_format
+        except :
+            sys_prompt = sys_prompt
         message_content = [
             {
                 "type": "text",
