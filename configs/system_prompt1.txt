@@ -328,4 +328,4 @@ the response should be in JSON format like explained right below :
 		"ADVANCE_PAYMENT":, // if not mentioned then 0
 		"CURRENCY": , // return num of the corresponding method from the given knowledge base
 	}
-your response should be only in JSON format, without comments and extremely precise . 
+your response should be only in JSON format, without comments, no verbose and extremely precise . 

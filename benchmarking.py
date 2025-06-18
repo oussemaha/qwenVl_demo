@@ -1,5 +1,6 @@
 from configs.constants import *
 from src.featureExtraction_Validation.llm_extraction import LLM_extractor
+from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
 from src.featureExtraction_Validation.json_validator import JSONComparator
 from src.classification.ocr_classification import Classifier
 import kagglehub
@@ -8,45 +9,149 @@ import os
 import json
 import torch
 import gc
+import csv
+import telegram
+import asyncio
+import time
+from datetime import timedelta
 
+# Initialize global variables
+llm_extractor = None
+classifier = None
+validator = None
 
-llm_extractor=LLM_extractor(MODEL_NAME,SYSTEM_PROMPT_PATH)
-classifier= Classifier(UNIVERSAL_KEYWORDS,UNIVERSAL_PATTERNS,CLASSIFICATION_KEYWORD_THRESHOLD,CLASSIFICATION_MIN_TEXT_LENGTH,gpu=CLASSIFICATION_GPU)
-validator=JSONComparator(llm_extractor)
+async def send_message(api_key, user_id, message):
+    bot = telegram.Bot(token=api_key)
+    async with bot:
+        await bot.send_message(chat_id=user_id, text=message)
 
-def clean_gpu_if_high_usage(threshold_gb=21):
-    """Cleans GPU memory only if allocated VRAM > threshold_gb (silently)."""
-    if torch.cuda.memory_allocated() / (1024 ** 3) > threshold_gb:
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
-        gc.collect()
-        
+def initialize_models():
+    """Initialize or reinitialize all models"""
+    global llm_extractor, classifier, validator
+    if llm_extractor is not None:
+        del llm_extractor
+    if classifier is not None:
+        del classifier
+    if validator is not None:
+        del validator
+    
+    torch.cuda.empty_cache()
+    gc.collect()
+    
+    llm_extractor = GemmaImageProcessor(MODEL_NAME, SYSTEM_PROMPT_PATH)
+    classifier = Classifier(UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS, 
+                          CLASSIFICATION_KEYWORD_THRESHOLD, 
+                          CLASSIFICATION_MIN_TEXT_LENGTH,
+                          gpu=CLASSIFICATION_GPU)
+    validator = JSONComparator(llm_extractor)
+    asyncio.run(send_message(api_key, user_id, "Models reinitialized after GPU cleanup."))
+
+def clean_gpu_if_high_usage(threshold_gb=35):
+    """Cleans GPU memory if allocated VRAM > threshold_gb"""
+    torch.cuda.empty_cache()
+    gc.collect()
+    
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / (1024 ** 3)
+        print(f"Current GPU memory allocated: {allocated:.2f} GB")
+        if allocated > threshold_gb:
+            initialize_models()
+
 if __name__ == "__main__":
-    dataset_dir = kagglehub.dataset_download("oussemahamouda/factures-biat")
-    dataset_dir = dataset_dir+"/pj_smi_biat"
-    df = pd.read_csv(dataset_dir+"/all_data.csv")
-    result_df = pd.DataFrame(columns=["REF_CONTRAT", "CURRENCY", "AMOUNT_PTFN","AMOUNT_FOB","INVOICE_NUMBER","INVOICE_DATE","SELLER_NAME",
-                                   "SELLER_ADDRESS	","BUYER_NAME","BUYER_ADDRESS","MODE_REGLEMENT_CODE","CODE_DELAI_REGLEMENT","CODE_MODE_LIVRAISON","ADVANCE_PAYMENT"])
-    index= 0
-    for i in df["REF_CONTRAT"] :
-        index+=1
-        images=[]
-        clean_gpu_if_high_usage(20)
-        for root,dirs,files in os.walk(dataset_dir+f"/{i}") :
-            data=dict()
-            for file in files:
-                if file.split('.')[1]=="json":
-                    with open(root+"/"+file) as json_data:
-                        data = json.load(json_data)
-                        break
-        for file_path in data["invoice_paths"]:
-            file_path=dataset_dir+ f"/{i}/"+file_path.split('/')[-1]  # Get the file name
-            images.append(classifier.open_file_as_image(file_path))
-        llm_json=llm_extractor.extract_data(images,"")
+    api_key = "7847416478:AAFFBsP9IQCMGB7PUvzv4GrcIVocwFDTylg"
+    user_id = "6473083926"
+    
+    # Initialize models first time
+    initialize_models()
+    
+    try:
+        dataset_dir = kagglehub.dataset_download("oussemahamouda/factures-biat")
+        dataset_dir = dataset_dir + "/pj_smi_biat"
+        df = pd.read_csv(dataset_dir + "/all_data.csv")
+        total_items = len(df["REF_CONTRAT"])
+        
+        # Get starting index from user or environment variable
+        start_index = 0  
+        if start_index >= total_items:
+            raise ValueError(f"Start index {start_index} is out of range (total items: {total_items})")
+        
+        asyncio.run(send_message(api_key, user_id, 
+                    f"Starting dataset processing from index {start_index} (total items: {total_items})..."))
+        
+        header = ["REF_CONTRAT", "CURRENCY", "AMOUNT_PTFN", "AMOUNT_FOB", "INVOICE_NUMBER", "INVOICE_DATE", 
+                 "SELLER_NAME", "SELLER_ADDRESS", "BUYER_NAME", "BUYER_ADDRESS", "MODE_REGLEMENT_CODE", 
+                 "CODE_DELAI_REGLEMENT", "CODE_MODE_LIVRAISON", "ADVANCE_PAYMENT"]
+        
+        # Open file in append mode if starting from non-zero index
+        file_mode = 'a' if start_index > 0 else 'w'
+        with open("result.csv", file_mode, newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            if file_mode == 'w':
+                writer.writerow(header)  # Only write header if new file
 
-        comparison_result=validator.compare_jsons(data["data"][0],llm_json)
-        result_df.loc[len(df)] = comparison_result
-        print(f"{(index/len(df))* 100:.2f}% completed", end='\r')
+            start_time = time.time()
+            processed_items = 0
+            
+            for index in range(start_index, total_items):
+                contract_ref = df["REF_CONTRAT"].iloc[index]
+                item_start_time = time.time()
+                images = []
+                clean_gpu_if_high_usage()
 
-    pd.DataFrame.to_csv(result_df,"result.csv", index=False)
+                # Find and load JSON data
+                data = dict()
+                for root, dirs, files in os.walk(dataset_dir + f"/{contract_ref}"):
+                    for file in files:
+                        if file.endswith(".json"):
+                            with open(os.path.join(root, file)) as json_data:
+                                data = json.load(json_data)
+                                break
+                
+                # Process images
+                for file_path in data["invoice_paths"]:
+                    full_path = os.path.join(dataset_dir, f"{contract_ref}", os.path.basename(file_path))
+                    images.append(classifier.open_file_as_image(full_path))
 
+                # Extract and compare data
+                llm_json = llm_extractor.extract_data(images, "")
+                comparison_result = validator.compare_jsons(data["data"][0], llm_json)
+                comparison_result["REF_CONTRAT"] = contract_ref
+                writer.writerow(comparison_result.values())
+
+                # Calculate progress and time estimates
+                processed_items += 1
+                current_index = index + 1  # Convert to 1-based counting
+                elapsed_time = time.time() - start_time
+                avg_time_per_item = elapsed_time / processed_items
+                remaining_items = total_items - current_index
+                estimated_remaining_time = avg_time_per_item * remaining_items
+                
+                # Format time for display
+                elapsed_str = str(timedelta(seconds=int(elapsed_time)))
+                remaining_str = str(timedelta(seconds=int(estimated_remaining_time)))
+                
+                progress_percent = (current_index/total_items)*100
+                progress_msg = (
+                    f"Progress: {progress_percent:.2f}% | "
+                    f"Items: {current_index}/{total_items} | "
+                    f"Elapsed: {elapsed_str} | "
+                    f"Remaining: ~{remaining_str} | "
+                    f"Last item: {time.time() - item_start_time:.2f}s"
+                )
+                
+                print(progress_msg)
+                
+
+        
+        completion_msg = (
+            f"Processing completed from index {start_index}!\n"
+            f"Total time: {timedelta(seconds=int(time.time() - start_time))}\n"
+            f"Processed items: {total_items - start_index}/{total_items}"
+        )
+        asyncio.run(send_message(api_key, user_id, completion_msg))
+        print("\n" + completion_msg)
+    
+    except Exception as e:
+        error_msg = f"Error processing dataset at index {index if 'index' in locals() else 'N/A'}: {str(e)}"
+        asyncio.run(send_message(api_key, user_id, error_msg))
+        print(error_msg)

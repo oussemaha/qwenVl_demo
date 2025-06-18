@@ -1,7 +1,7 @@
 from transformers import AutoModelForImageTextToText,Qwen2VLForConditionalGeneration, AutoProcessor,AutoModelForVision2Seq
 import torch
 
-from qwen_vl_utils import process_vision_info
+#from qwen_vl_utils import process_vision_info
 import json
 from PIL import Image
 
@@ -12,7 +12,7 @@ class LLM_extractor:
         """
             for more generic use, change ```Qwen2VLForConditionalGeneration``` by ```AutoModelForVision2Seq```
         """
-        self.model = Qwen2VLForConditionalGeneration.from_pretrained(
+        self.model = AutoModelForImageTextToText.from_pretrained(
             model_name,
             torch_dtype=torch.bfloat16,
             attn_implementation="flash_attention_2",
@@ -139,5 +139,25 @@ class LLM_extractor:
             generated_ids_trimmed, skip_special_tokens=True, clean_up_tokenization_spaces=False
         )
         result=result[0]        
-        result=self.string_to_JSON(result)
+        try:
+            result = result[result.find('{'):result.rfind('}')+1]
+            result=self.string_to_JSON(result)
+        except:
+            result ={
+                      "REF_CONTRAT": None,
+                      "CURRENCY": None,
+                      "AMOUNT_PTFN": None,
+                      "AMOUNT_FOB": None,
+                      "INVOICE_NUMBER": None,
+                      "INVOICE_DATE": None,
+                      "SELLER_NAME": None,
+                      "SELLER_ADDRESS": None,
+                      "BUYER_NAME": None,
+                      "BUYER_ADDRESS": None,
+                      "MODE_REGLEMENT_CODE": None,
+                      "CODE_DELAI_REGLEMENT": None,
+                      "CODE_MODE_LIVRAISON": None,
+                      "ADVANCE_PAYMENT": None
+                    }
+        
         return result

@@ -64,10 +64,13 @@ class JSONComparator:
         json2["REF_CONTRAT"]= json1["REF_CONTRAT"]
         comp= {key: self.compare_values(json1.get(key), json2.get(key)) 
                 for key in json1}
-        if "BUYER_ADDRESS" in comp and  not comp["BUYER_ADDRESS"]:
-            comp["BUYER_ADDRESS"]=self.compare_text(json1["BUYER_ADDRESS"], json2["BUYER_COUNTRY"])
-        if "SELLER_ADDRESS" in comp and not comp["SELLER_ADDRESS"]:
-            comp["SELLER_ADDRESS"]=self.compare_text(json1["SELLER_ADDRESS"], json2["SELLER_COUNTRY"])
+        try:
+            if "BUYER_ADDRESS" in comp and  not comp["BUYER_ADDRESS"]:
+                comp["BUYER_ADDRESS"]=self.compare_text(json1["BUYER_ADDRESS"], json2["BUYER_COUNTRY"])
+            if "SELLER_ADDRESS" in comp and not comp["SELLER_ADDRESS"]:
+                comp["SELLER_ADDRESS"]=self.compare_text(json1["SELLER_ADDRESS"], json2["SELLER_COUNTRY"])
+        except KeyError:
+            print("KeyError: One of the keys is missing in the JSON objects.")
         return comp
         
 # Example Usage
