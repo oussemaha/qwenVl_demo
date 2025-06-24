@@ -7,7 +7,7 @@ from typing import List, Union, Dict, Any
 import numpy as np
 
 class GemmaImageProcessor:
-    def __init__(self, model_name: str = "google/gemma-3-12b-it", prompt_file_path: str = None):
+    def __init__(self, model_name: str = "google/gemma-3-12b-it"):
         """
         Initialize the Gemma image processor.
         
@@ -21,26 +21,8 @@ class GemmaImageProcessor:
             device_map="auto"
         )
         self.processor = AutoProcessor.from_pretrained(model_name)
-        self.prompt_file_path = prompt_file_path
         
-    def read_file_to_string(self, file_path: str) -> str:
-        """
-        Read content from a file and return as string.
-        
-        Args:
-            file_path: Path to the file to read
-            
-        Returns:
-            Content of the file as string
-        """
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            return content
-        except FileNotFoundError:
-            return "File not found."
-        except Exception as e:
-            return f"An error occurred: {e}"
+   
         
     def string_to_JSON(self, text: str) -> Dict[str, Any]:
         """
@@ -94,6 +76,7 @@ class GemmaImageProcessor:
             images = [images]
             
         # Convert numpy arrays to PIL Images if needed
+        
         pil_images = []
         for img in images:
             if isinstance(img, np.ndarray):
@@ -120,27 +103,49 @@ Describe the contents of this image with details. Be verbose.
         generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
         
         return generated_text
-        
-    def extract_data(self, images, 
-                    response_format: Dict[str, Any] = None) -> Dict[str, Any]:
+    def generate_text_response_without_image(self, prompt: str = None, max_new_tokens: int = 600) -> str:
+        """
+        Generate text response for the given prompt without requiring images.
+
+        Args:
+            prompt: Text prompt to use (optional)
+            max_new_tokens: Maximum number of tokens to generate
+
+        Returns:
+            Generated text response
+        """
+        # Use default prompt if none provided
+        if prompt is None:
+            if self.prompt_file_path:
+                prompt = self.read_file_to_string(self.prompt_file_path)
+            else:
+                prompt = """<start_of_turn>user
+Describe the contents of the document in detail.
+<end_of_turn>
+<start_of_turn>model"""
+
+        # Prepare inputs without images
+        inputs = self.processor(text=prompt, return_tensors="pt")
+        inputs = inputs.to(self.model.device)
+
+        outputs = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
+        generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
+
+        return generated_text
+
+    def extract_data(self, images, sys_prompt) -> Dict[str, Any]:
         """
         Extract structured data from image(s) according to specified format.
         
         Args:
             images: Single image or list of images (PIL Image or numpy array)
-            response_format: Dictionary specifying the expected response format
-            
+            sys_prompt: System prompt to use for extraction
+
         Returns:
             Dictionary containing extracted data
         """
         # Get system prompt from file or use default
-        if self.prompt_file_path:
-            sys_prompt = self.read_file_to_string(self.prompt_file_path)
-            try:
-                sys_prompt = sys_prompt % response_format if response_format else sys_prompt
-            except:
-                pass
-        else:
+        if sys_prompt is None:
             sys_prompt = """Extract all relevant information from this document image. 
             Return the data in JSON format with the following fields: 
             REF_CONTRAT, CURRENCY, AMOUNT_PTFN, AMOUNT_FOB, INVOICE_NUMBER, 
@@ -158,15 +163,12 @@ Describe the contents of this image with details. Be verbose.
         
         # Generate response
         generated_text = self.generate_response(images, prompt)
-        
         # Try to parse JSON from response
+        generated_text = generated_text.split("model")[1]
         try:
             result = self.string_to_JSON(generated_text)
             # Ensure all expected fields are present
-            if response_format:
-                for key in response_format:
-                    if key not in result:
-                        result[key] = None
+            
             return result
         except:
             # Return default empty structure if parsing fails
@@ -208,5 +210,6 @@ Text 2: {text2}
 <end_of_turn>
 <start_of_turn>model"""
         
-        generated_text = self.generate_response([], prompt)  # Empty image list
-        return generated_text.strip().lower() == "true"
+        generated_text = self.generate_text_response_without_image( prompt= prompt)  # Empty image list
+        response=generated_text.split("model")[1].strip().lower() == "true"
+        return response

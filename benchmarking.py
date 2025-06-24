@@ -37,8 +37,8 @@ def initialize_models():
     
     torch.cuda.empty_cache()
     gc.collect()
-    
-    llm_extractor = GemmaImageProcessor(MODEL_NAME, SYSTEM_PROMPT_PATH)
+
+    llm_extractor = GemmaImageProcessor(MODEL_NAME)
     classifier = Classifier(UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS, 
                           CLASSIFICATION_KEYWORD_THRESHOLD, 
                           CLASSIFICATION_MIN_TEXT_LENGTH,
@@ -56,22 +56,43 @@ def clean_gpu_if_high_usage(threshold_gb=35):
         print(f"Current GPU memory allocated: {allocated:.2f} GB")
         if allocated > threshold_gb:
             initialize_models()
-
+def read_file_to_string( file_path: str) -> str:
+        """
+        Read content from a file and return as string.
+        
+        Args:
+            file_path: Path to the file to read
+            
+        Returns:
+            Content of the file as string
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content
+        except FileNotFoundError:
+            return "File not found."
+        except Exception as e:
+            return f"An error occurred: {e}"
+        
 if __name__ == "__main__":
-    api_key = "7847416478:AAFFBsP9IQCMGB7PUvzv4GrcIVocwFDTylg"
+    api_key = "7847416478:AAGw5Rxu81D1DKyQJtPWmnMD9qrCqq905TU"
     user_id = "6473083926"
     
     # Initialize models first time
     initialize_models()
-    
+    prompts=[]
     try:
+        for i in range(6):
+           prompts.append(read_file_to_string(f"/home/oussema/Desktop/projet_domi_AI/qwenVl_demo/configs/prompts/prompt{i+1}.txt"))
+           
         dataset_dir = kagglehub.dataset_download("oussemahamouda/factures-biat")
         dataset_dir = dataset_dir + "/pj_smi_biat"
         df = pd.read_csv(dataset_dir + "/all_data.csv")
         total_items = len(df["REF_CONTRAT"])
         
         # Get starting index from user or environment variable
-        start_index = 0  
+        start_index = 0
         if start_index >= total_items:
             raise ValueError(f"Start index {start_index} is out of range (total items: {total_items})")
         
@@ -111,13 +132,20 @@ if __name__ == "__main__":
                 for file_path in data["invoice_paths"]:
                     full_path = os.path.join(dataset_dir, f"{contract_ref}", os.path.basename(file_path))
                     images.append(classifier.open_file_as_image(full_path))
-
+                llm_json=dict()
                 # Extract and compare data
-                llm_json = llm_extractor.extract_data(images, "")
+                for sys_prompt in prompts:
+                    llm_json.update(llm_extractor.extract_data(images, sys_prompt=sys_prompt))
+                print(llm_json)
                 comparison_result = validator.compare_jsons(data["data"][0], llm_json)
                 comparison_result["REF_CONTRAT"] = contract_ref
-                writer.writerow(comparison_result.values())
-
+                row=[]
+                for column in header:
+                    if column in comparison_result:
+                        row.append(comparison_result[column])
+                    else:
+                        row.append(None)
+                writer.writerow(row)
                 # Calculate progress and time estimates
                 processed_items += 1
                 current_index = index + 1  # Convert to 1-based counting

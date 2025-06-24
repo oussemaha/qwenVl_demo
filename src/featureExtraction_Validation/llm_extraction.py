@@ -8,7 +8,7 @@ from PIL import Image
 
 
 class LLM_extractor:
-    def __init__(self,model_name,prompt_file_path):
+    def __init__(self,model_name):
         """
             for more generic use, change ```Qwen2VLForConditionalGeneration``` by ```AutoModelForVision2Seq```
         """
@@ -19,17 +19,7 @@ class LLM_extractor:
             device_map="auto",
         )
         self.processor = AutoProcessor.from_pretrained(model_name)
-        self.prompt_file_path=prompt_file_path
         
-    def read_file_to_string(self,file_path:str):
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            return content
-        except FileNotFoundError:
-            return "File not found."
-        except Exception as e:
-            return f"An error occurred: {e}"
         
     def string_to_JSON(self,text):
         text.replace('\n','')
@@ -83,12 +73,7 @@ class LLM_extractor:
         result=result[0]
         return bool(result.strip().lower() == "true")  # Assuming the model returns "True" or "False"        
     
-    def extract_data(self,images, response_format):
-        sys_prompt=self.read_file_to_string(self.prompt_file_path) 
-        try:
-            sys_prompt= sys_prompt %  response_format
-        except :
-            sys_prompt = sys_prompt
+    def extract_data(self,images, sys_prompt):
         message_content = [
             {
                 "type": "text",
