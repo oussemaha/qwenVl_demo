@@ -105,14 +105,20 @@ if __name__ == "__main__":
         
         # Open file in append mode if starting from non-zero index
         file_mode = 'a' if start_index > 0 else 'w'
-        with open("result.csv", file_mode, newline='') as csvfile:
-            writer = csv.writer(csvfile)
+        with open("result.csv", file_mode, newline='') as result_file, \
+             open("llm_output.csv", file_mode, newline='') as llm_file:
+
+            result_writer = csv.writer(result_file)
+            llm_writer = csv.writer(llm_file)
+
+            # Write headers if new files
             if file_mode == 'w':
-                writer.writerow(header)  # Only write header if new file
+                result_writer.writerow(header)
+                llm_writer.writerow(header)
 
             start_time = time.time()
             processed_items = 0
-            
+
             for index in range(start_index, total_items):
                 contract_ref = df["REF_CONTRAT"].iloc[index]
                 item_start_time = time.time()
@@ -127,25 +133,40 @@ if __name__ == "__main__":
                             with open(os.path.join(root, file)) as json_data:
                                 data = json.load(json_data)
                                 break
-                
+                            
                 # Process images
                 for file_path in data["invoice_paths"]:
                     full_path = os.path.join(dataset_dir, f"{contract_ref}", os.path.basename(file_path))
                     images.append(classifier.open_file_as_image(full_path))
-                llm_json=dict()
+
+                llm_json = dict()
                 # Extract and compare data
                 for sys_prompt in prompts:
                     llm_json.update(llm_extractor.extract_data(images, sys_prompt=sys_prompt))
                 print(llm_json)
+
+                # Write LLM JSON data to separate file
+                for field_name, value in llm_json.items():
+                    llm_writer.writerow([contract_ref, field_name, str(value)])
+
+                # Process comparison results
                 comparison_result = validator.compare_jsons(data["data"][0], llm_json)
                 comparison_result["REF_CONTRAT"] = contract_ref
                 row=[]
+                for column in header:
+                    if column in llm_json:
+                        row.append(llm_json[column])
+                    else:
+                        row.append(None)
+                llm_writer.writerow(row)    
+                row = []
                 for column in header:
                     if column in comparison_result:
                         row.append(comparison_result[column])
                     else:
                         row.append(None)
-                writer.writerow(row)
+                result_writer.writerow(row)
+
                 # Calculate progress and time estimates
                 processed_items += 1
                 current_index = index + 1  # Convert to 1-based counting
@@ -153,11 +174,11 @@ if __name__ == "__main__":
                 avg_time_per_item = elapsed_time / processed_items
                 remaining_items = total_items - current_index
                 estimated_remaining_time = avg_time_per_item * remaining_items
-                
+
                 # Format time for display
                 elapsed_str = str(timedelta(seconds=int(elapsed_time)))
                 remaining_str = str(timedelta(seconds=int(estimated_remaining_time)))
-                
+
                 progress_percent = (current_index/total_items)*100
                 progress_msg = (
                     f"Progress: {progress_percent:.2f}% | "
@@ -166,9 +187,9 @@ if __name__ == "__main__":
                     f"Remaining: ~{remaining_str} | "
                     f"Last item: {time.time() - item_start_time:.2f}s"
                 )
-                
+
                 print(progress_msg)
-                
+
 
         
         completion_msg = (
