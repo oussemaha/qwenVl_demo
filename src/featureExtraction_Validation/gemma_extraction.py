@@ -48,7 +48,7 @@ class GemmaImageProcessor:
             # Try to convert values to int or float where possible
             for key in result:
                 try:
-                    result[key] = int(result[key])
+                    result[key] = float(result[key])
                 except (ValueError, TypeError):
                     try:
                         result[key] = float(result[key])
