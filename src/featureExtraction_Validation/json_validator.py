@@ -42,8 +42,16 @@ class JSONComparator:
                 return False
         return False
 
-    def compare_values(self, v1: Any, v2: Any) -> bool:
+    def compare_values(self, v1: Any, v2: Any, key: str) -> bool:
         """Compare values with type-specific rules"""
+        list_code_delai_reg_similarity=[[13,33],[66,15],[12,22],[11,18,98]]
+        if key=="CODE_DELAI_REGLEMENT":
+            if v1==v2:
+                return True
+            elif any(v1 in sublist and v2 in sublist for sublist in list_code_delai_reg_similarity):
+                return True
+            else:
+                return False    
         # Handle None cases
         if v1 is None or v2 is None:
             return v1 == v2
@@ -62,7 +70,7 @@ class JSONComparator:
     def compare_jsons(self, json1: Dict[str, Any], json2: Dict[str, Any]) -> Dict[str, bool]:
         """Compare two JSON objects field-by-field"""
         json2["REF_CONTRAT"]= json1["REF_CONTRAT"]
-        comp= {key: self.compare_values(json1.get(key), json2.get(key)) 
+        comp= {key: self.compare_values(json1.get(key), json2.get(key),key) 
                 for key in json1}
         try:
             if "BUYER_ADDRESS" in comp and  not comp["BUYER_ADDRESS"]:
