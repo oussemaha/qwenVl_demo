@@ -13,3 +13,4 @@ Your output **must** be a JSON object, and it must meticulously conform to the s
   "INVOICE_DATE": "<string_value>", // The date the invoice was issued, formatted as YYYY-MM-DD.
   "INVOICE_NUMBER": "<string_value>" // The complete, unique, and formatted identifier/number for the invoice.
 }
+Please process the scanned invoice image and provide the output in the strict JSON format above.

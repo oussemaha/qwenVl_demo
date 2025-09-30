@@ -83,8 +83,8 @@ if __name__ == "__main__":
     initialize_models()
     prompts=[]
     try:
-        for i in range(6):
-           prompts.append(read_file_to_string(f"/home/oussema/Desktop/projet_domi_AI/qwenVl_demo/configs/prompts/prompt{i+1}.txt"))
+        for i in range(7):
+           prompts.append(read_file_to_string(f"/home/ubuntu/qwenVl_demo/configs/prompts/prompt{i+1}.txt"))
            
         dataset_dir = kagglehub.dataset_download("oussemahamouda/factures-biat")
         dataset_dir = dataset_dir + "/pj_smi_biat"
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         total_items = len(df["REF_CONTRAT"])
         
         # Get starting index from user or environment variable
-        start_index = 0
+        start_index = 98
         if start_index >= total_items:
             raise ValueError(f"Start index {start_index} is out of range (total items: {total_items})")
         
@@ -144,10 +144,6 @@ if __name__ == "__main__":
                 for sys_prompt in prompts:
                     llm_json.update(llm_extractor.extract_data(images, sys_prompt=sys_prompt))
                 print(llm_json)
-
-                # Write LLM JSON data to separate file
-                for field_name, value in llm_json.items():
-                    llm_writer.writerow([contract_ref, field_name, str(value)])
 
                 # Process comparison results
                 comparison_result = validator.compare_jsons(data["data"][0], llm_json)
