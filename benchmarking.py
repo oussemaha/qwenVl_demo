@@ -38,7 +38,7 @@ def initialize_models():
     torch.cuda.empty_cache()
     gc.collect()
 
-    llm_extractor = GemmaImageProcessor(MODEL_NAME)
+    llm_extractor = LLM_extractor(MODEL_NAME)
     classifier = Classifier(UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS, 
                           CLASSIFICATION_KEYWORD_THRESHOLD, 
                           CLASSIFICATION_MIN_TEXT_LENGTH,
@@ -92,7 +92,7 @@ if __name__ == "__main__":
         total_items = len(df["REF_CONTRAT"])
         
         # Get starting index from user or environment variable
-        start_index = 98
+        start_index =0
         if start_index >= total_items:
             raise ValueError(f"Start index {start_index} is out of range (total items: {total_items})")
         
@@ -123,7 +123,7 @@ if __name__ == "__main__":
                 contract_ref = df["REF_CONTRAT"].iloc[index]
                 item_start_time = time.time()
                 images = []
-                clean_gpu_if_high_usage()
+                clean_gpu_if_high_usage(75)  # Clean GPU if usage > 75GB
 
                 # Find and load JSON data
                 data = dict()
@@ -135,9 +135,13 @@ if __name__ == "__main__":
                                 break
                             
                 # Process images
-                for file_path in data["invoice_paths"]:
-                    full_path = os.path.join(dataset_dir, f"{contract_ref}", os.path.basename(file_path))
-                    images.append(classifier.open_file_as_image(full_path))
+                # Open all images in the contract_ref directory except JSON files
+                images = []
+                contract_dir = os.path.join(dataset_dir, f"{contract_ref}")
+                for file in os.listdir(contract_dir):
+                    if not file.lower().endswith(".json"):
+                        full_path = os.path.join(contract_dir, file)
+                        images.append(classifier.open_file_as_image(full_path))
 
                 llm_json = dict()
                 # Extract and compare data
