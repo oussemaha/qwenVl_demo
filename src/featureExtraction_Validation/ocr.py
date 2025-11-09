@@ -11,4 +11,5 @@ class OCRProcessor:
     def extract_text(self, image):
         result = self.ocr.predict(
             input=image)
-        return result["rec_texts"]
+        
+        return result[0]["rec_texts"]

@@ -1,6 +1,6 @@
 from unittest import result
 from configs.constants import *
-from src.featureExtraction_Validation.llm_extraction import LLM_extractor
+#from src.featureExtraction_Validation.llm_extraction import LLM_extractor
 from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
 from src.featureExtraction_Validation.json_validator import JSONComparator
 from src.featureExtraction_Validation.ocr import OCRProcessor
