@@ -41,7 +41,7 @@ def initialize_models():
     torch.cuda.empty_cache()
     gc.collect()
 
-    llm_extractor = LLM_extractor(MODEL_NAME)
+    llm_extractor = GemmaImageProcessor(MODEL_NAME)
     classifier = Classifier(UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS, 
                           CLASSIFICATION_KEYWORD_THRESHOLD, 
                           CLASSIFICATION_MIN_TEXT_LENGTH,

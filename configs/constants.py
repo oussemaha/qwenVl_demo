@@ -1,6 +1,6 @@
 #MODEL_NAME="/home/ubuntu/Qwen2-VL-7B-Instruct"
 #MODEL_NAME="Qwen/Qwen2.5-VL-7B-Instruct"
-MODEL_NAME="google/gemma-3-12b-it"
+MODEL_NAME="google/gemma-3-27b-it"
 SYSTEM_PROMPT_PATH="./configs/system_prompt1.txt"
 TEMP_DIR="./TEMP"
 CLASSIFICATION_GPU=True
