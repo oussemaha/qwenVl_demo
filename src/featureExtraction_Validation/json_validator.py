@@ -16,11 +16,7 @@ class JSONComparator:
         Initialize with enhanced text comparison handling.
         """
         self.llm_extractor = llm_extractor
-        try:
-            self.nlp = spacy.load(nlp_model)
-        except OSError:
-            print(f"Warning: {nlp_model} not found. Falling back to 'en_core_web_sm'")
-            self.nlp = spacy.load("en_core_web_sm")
+
         
         self.text_sim_threshold = text_similarity_threshold
 

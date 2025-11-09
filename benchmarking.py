@@ -1,7 +1,9 @@
+from unittest import result
 from configs.constants import *
 from src.featureExtraction_Validation.llm_extraction import LLM_extractor
 from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
 from src.featureExtraction_Validation.json_validator import JSONComparator
+from src.featureExtraction_Validation.ocr import OCRProcessor
 from src.classification.ocr_classification import Classifier
 import kagglehub
 import pandas as pd
@@ -19,6 +21,7 @@ from datetime import timedelta
 llm_extractor = None
 classifier = None
 validator = None
+ocr_processor = OCRProcessor()
 
 async def send_message(api_key, user_id, message):
     bot = telegram.Bot(token=api_key)
@@ -123,7 +126,6 @@ if __name__ == "__main__":
                 contract_ref = df["REF_CONTRAT"].iloc[index]
                 item_start_time = time.time()
                 images = []
-                clean_gpu_if_high_usage(75)  # Clean GPU if usage > 75GB
 
                 # Find and load JSON data
                 data = dict()
@@ -144,6 +146,10 @@ if __name__ == "__main__":
                         images.append(classifier.open_file_as_image(full_path))
 
                 llm_json = dict()
+                """
+                for img in images:
+                    ocr_results = ocr_processor.extract_text(img)
+                    result = "".join(ocr_results)"""
                 # Extract and compare data
                 for sys_prompt in prompts:
                     llm_json.update(llm_extractor.extract_data(images, sys_prompt=sys_prompt))
