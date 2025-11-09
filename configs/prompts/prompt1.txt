@@ -46,4 +46,12 @@ Your output **must** be a JSON object, and it must meticulously conform to the s
   "AMOUNT_FOB": <float_value_or_null>, // The "Free On Board" amount. If the term "FOB" or "Free On Board" is explicitly present and quantifiable, extract its value as a float. **If NOT clearly present, set this value strictly to null. Do NOT default to any other total amount.**
   "CURRENCY": <integer_value> // The numeric code ('Num') for the invoice's currency, obtained from the provided knowledge base by matching the identified currency (by Code or Name) to its 'Num'.
 }
+
+
+### Raw OCR Extracted Text
+The following text was extracted from the scanned invoice image. Use this text and the visual image to locate the required values.
+
+<OCR TEXT>
+
+---
 Please process the scanned invoice image and provide the output in the strict JSON format above.

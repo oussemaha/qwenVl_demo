@@ -146,12 +146,17 @@ if __name__ == "__main__":
                         images.append(classifier.open_file_as_image(full_path))
 
                 llm_json = dict()
-                """
+
+                ocr_text = " "
+                i=0
                 for img in images:
+                    i+=1
+                    ocr_text = ocr_text + f" \n### Image {i} OCR Text:\n "
                     ocr_results = ocr_processor.extract_text(img)
-                    result = "".join(ocr_results)"""
+                    ocr_text = ocr_text + " ".join(ocr_results)
                 # Extract and compare data
                 for sys_prompt in prompts:
+                    sys_prompt = sys_prompt.replace("<OCR TEXT>", ocr_text)
                     llm_json.update(llm_extractor.extract_data(images, sys_prompt=sys_prompt))
                 print(llm_json)
 

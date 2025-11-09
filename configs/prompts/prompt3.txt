@@ -21,4 +21,10 @@ Your output **must** be a JSON object, and it must meticulously conform to the s
   "BUYER_COUNTRY": "<string_value_in_french>" // The country of the buyer, translated into French.
 }
 
+### Raw OCR Extracted Text
+The following text was extracted from the scanned invoice image. Use this text and the visual image to locate the required values.
+
+<OCR TEXT>
+
+---
 Please process the scanned invoice image and provide the output in the strict JSON format above.

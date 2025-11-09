@@ -37,4 +37,10 @@ Your output **must** be a JSON object, and it must meticulously conform to the s
   "CODE_MODE_LIVRAISON": <integer_value> // The numeric code ('id') for the invoice's delivery method (Incoterm), obtained from the provided knowledge base by matching the identified term to its 'id'. If the term is completely absent, is not an Incoterm, or is highly ambiguous, you must determine the most likely matching Incoterm or provide a null value if no reasonable match is possible.
 }
 
+### Raw OCR Extracted Text
+The following text was extracted from the scanned invoice image. Use this text and the visual image to locate the required values.
+
+<OCR TEXT>
+
+---
 Please process the scanned invoice image and provide the output in the strict JSON format above.
