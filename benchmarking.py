@@ -105,7 +105,10 @@ if __name__ == "__main__":
         header = ["REF_CONTRAT", "CURRENCY", "AMOUNT_PTFN", "AMOUNT_FOB", "INVOICE_NUMBER", "INVOICE_DATE", 
                  "SELLER_NAME", "SELLER_ADDRESS", "BUYER_NAME", "BUYER_ADDRESS", "MODE_REGLEMENT_CODE", 
                  "CODE_DELAI_REGLEMENT", "CODE_MODE_LIVRAISON", "ADVANCE_PAYMENT"]
-        
+        header1=header.copy()
+        header1.append("SELLER_COUNTRY")
+        header1.append("BUYER_COUNTRY")
+
         # Open file in append mode if starting from non-zero index
         file_mode = 'a' if start_index > 0 else 'w'
         with open("result.csv", file_mode, newline='') as result_file, \
@@ -117,7 +120,8 @@ if __name__ == "__main__":
             # Write headers if new files
             if file_mode == 'w':
                 result_writer.writerow(header)
-                llm_writer.writerow(header)
+                
+                llm_writer.writerow(header1)
 
             start_time = time.time()
             processed_items = 0
@@ -164,7 +168,7 @@ if __name__ == "__main__":
                 comparison_result = validator.compare_jsons(data["data"][0], llm_json)
                 comparison_result["REF_CONTRAT"] = contract_ref
                 row=[]
-                for column in header:
+                for column in header1:
                     if column in llm_json:
                         row.append(llm_json[column])
                     else:
