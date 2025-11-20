@@ -147,7 +147,7 @@ if __name__ == "__main__":
                 for file in os.listdir(contract_dir):
                     if not file.lower().endswith(".json"):
                         full_path = os.path.join(contract_dir, file)
-                        images.append(classifier.open_file_as_image(full_path))
+                        images.extend(classifier.open_file_as_image(full_path))
 
                 llm_json = dict()
 

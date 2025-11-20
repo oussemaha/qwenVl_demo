@@ -20,82 +20,138 @@ class Classifier :
         self.gpu:bool=gpu
     def open_file_as_image(self, file_path):
         """
-        Opens a file (PDF or image) and returns it as a NumPy array.
-        Uses different methods for PDF vs image files.
-
+        Opens a file (PDF, TIFF, or image) and returns it as a list of NumPy arrays.
+        Uses different methods for PDF/TIFF vs image files.
+    
         Args:
             file_path (str or Path): Path to the file
-
+    
         Returns:
-            numpy.ndarray: Image data in BGR format
+            list: List of numpy.ndarray images in BGR format
             None: If the file can't be opened
         """
         file_path = Path(file_path)
-
+    
         if not file_path.exists():
             raise FileNotFoundError(f"File not found: {file_path}")
-
+    
         # Handle PDF files
         if file_path.suffix.lower() == '.pdf':
-            try:  # PyMuPDF (import here to avoid conflicts)
-
+            try:
+                import fitz  # PyMuPDF
                 doc = fitz.open(file_path)
-                page = doc.load_page(0)  # First page
-                pix = page.get_pixmap()
-
-                # Convert to numpy array
-                img_array = np.frombuffer(pix.samples, dtype=np.uint8)
-                img_array = img_array.reshape((pix.height, pix.width, pix.n))
-
-                # Convert to BGR format expected by OpenCV
-                if pix.n == 4:  # RGBA
-                    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
-                elif pix.n == 3:  # RGB
-                    img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-                elif pix.n == 1:  # Grayscale
-                    img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
-
+                images = []
+                
+                for page_num in range(len(doc)):
+                    page = doc.load_page(page_num)
+                    pix = page.get_pixmap()
+                    
+                    # Convert to numpy array
+                    img_array = np.frombuffer(pix.samples, dtype=np.uint8)
+                    img_array = img_array.reshape((pix.height, pix.width, pix.n))
+    
+                    # Convert to BGR format expected by OpenCV
+                    if pix.n == 4:  # RGBA
+                        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
+                    elif pix.n == 3:  # RGB
+                        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+                    elif pix.n == 1:  # Grayscale
+                        img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
+                    
+                    images.append(img_array)
+                
                 doc.close()
-                return img_array
-
+                return images
+    
             except Exception as e:
                 print(f"Error reading PDF {file_path}: {str(e)}")
                 return None
-            
+        
+        # Handle TIFF files
+        elif file_path.suffix.lower() in ['.tiff', '.tif']:
+            try:
+                images = []
+                img = cv2.imread(str(file_path), cv2.IMREAD_ANYCOLOR)
+                
+                if img is not None:
+                    # For single-page TIFF, return as list with one element
+                    images.append(img)
+                    return images
+                
+                # Alternative method for multi-page TIFF using PIL/Pillow
+                try:
+                    from PIL import Image
+                    pil_img = Image.open(file_path)
+                    page_num = 0
+                    
+                    while True:
+                        # Convert PIL image to numpy array
+                        img_array = np.array(pil_img)
+                        
+                        # Convert RGB to BGR if needed
+                        if len(img_array.shape) == 3 and img_array.shape[2] == 3:
+                            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+                        elif len(img_array.shape) == 2:  # Grayscale
+                            img_array = cv2.cvtColor(img_array, cv2.COLOR_GRAY2BGR)
+                        elif len(img_array.shape) == 3 and img_array.shape[2] == 4:  # RGBA
+                            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
+                        
+                        images.append(img_array)
+                        page_num += 1
+                        
+                        try:
+                            pil_img.seek(page_num)
+                        except EOFError:
+                            break
+                            
+                    return images
+                    
+                except ImportError:
+                    print("PIL/Pillow not available for reading multi-page TIFF")
+                    return None
+                    
+            except Exception as e:
+                print(f"Error reading TIFF {file_path}: {str(e)}")
+                return None
+                
         elif file_path.suffix.lower() == '.gif':
             try:
-                # Read the GIF using OpenCV which will return the first frame
+                # Read only the first frame from GIF
                 gif = cv2.VideoCapture(str(file_path))
                 ret, frame = gif.read()
                 gif.release()
-
+    
                 if ret:
-                    return frame
+                    return [frame]  # Return first frame as list with single element
                 else:
-                    print(f"Error reading GIF {file_path}: Could not read frames")
+                    print(f"Error reading GIF {file_path}: Could not read first frame")
                     return None
-
+    
             except Exception as e:
                 print(f"Error reading GIF {file_path}: {str(e)}")
                 return None
-        # Handle image files
+        
+        # Handle single image files
         else:
             try:
                 # First try standard OpenCV imread
                 img = cv2.imread(str(file_path))
                 if img is not None:
-                    return img
-
+                    return [img]  # Return as list with single image
+    
                 # If that fails, try alternative reading method
                 with open(file_path, 'rb') as f:
                     img_array = np.frombuffer(f.read(), dtype=np.uint8)
                     img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
-                    return img
-
+                    if img is not None:
+                        return [img]  # Return as list with single image
+                    else:
+                        return None
+    
             except Exception as e:
                 print(f"Error reading image {file_path}: {str(e)}")
                 return None
-
+    
     def extract_text_from_easyocr(self, results):
         """Extract text from EasyOCR results in the format [[[points], text], ...]"""
         extracted_text = []

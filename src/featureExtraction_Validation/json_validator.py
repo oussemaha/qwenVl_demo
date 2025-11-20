@@ -1,5 +1,4 @@
 
-import json
 from dateutil.parser import parse
 from typing import Dict, Any
 
@@ -38,7 +37,7 @@ class JSONComparator:
     
     
     def comp_code_del_reg(self,v_user: Any, v_llm: Any) -> bool:
-        list_code_delai_reg_similarity=[[13,33],[66,15],[12,22],[11,98],[11,18],[11,97][11,98]]
+        list_code_delai_reg_similarity=[[13,33],[66,15],[12,22],[11,98],[11,18],[11,97],[11,98]]
         if v_user==v_llm:
             return True
         elif any(v_user in sublist and v_llm in sublist for sublist in list_code_delai_reg_similarity):
@@ -57,14 +56,16 @@ class JSONComparator:
         # Handle None cases
         if v_user is None or v_llm is None:
             return v_user == v_llm
+        
+        # Date comparison
+        if self.is_date(v_user) and self.is_date(v_llm):
+            return parse(v_user).date() == parse(v_llm).date()
             
         # Strict comparison for non-strings
         if not isinstance(v_user, str) or not isinstance(v_llm, str):
             return v_user == v_llm
             
-        # Date comparison
-        if self.is_date(v_user) and self.is_date(v_llm):
-            return parse(v_user).date() == parse(v_llm).date()
+        
             
         # Text comparison
         return self.compare_text(v_user, v_llm)

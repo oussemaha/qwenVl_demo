@@ -48,12 +48,14 @@ class GemmaImageProcessor:
             # Try to convert values to int or float where possible
             for key in result:
                 try:
-                    result[key] = float(result[key])
-                except (ValueError, TypeError):
-                    try:
+                    if key in ["AMOUNT_PTFN", "AMOUNT_FOB","ADVANCE_PAYMENT"]:
                         result[key] = float(result[key])
-                    except (ValueError, TypeError):
+                    elif key in ["CURRENCY","CODE_DELAI_REGLEMENT","CODE_MODE_LIVRAISON","MODE_REGLEMENT_CODE"]:
+                        result[key] = int(result[key])
+                    else: 
                         pass
+                except (ValueError, TypeError):
+                    pass
             return result
         except json.JSONDecodeError:
             return {}

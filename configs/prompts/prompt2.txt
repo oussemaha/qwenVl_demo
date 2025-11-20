@@ -10,7 +10,7 @@ Your analysis pipeline is as follows:
 Your output **must** be a JSON object, and it must meticulously conform to the structure and data types specified below. Only include the specified fields.
 
 {
-  "INVOICE_DATE": "<string_value>", // The date the invoice was issued, formatted as YYYY-MM-DD.
+  "INVOICE_DATE": "<string_value>", // The date the invoice was issued, formatted as DD/MM/YYYY.
   "INVOICE_NUMBER": "<string_value>" // The complete, unique, and formatted identifier/number for the invoice.
 }
 
