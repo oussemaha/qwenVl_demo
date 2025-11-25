@@ -4,7 +4,7 @@ import logging
 import os
 
 from src.classification.ocr_classification import Classifier
-from src.api_src.service import Service, extract, read_file_to_string
+from src.api_src.service import Service
 from configs.constants import *
 
 
@@ -27,7 +27,7 @@ classifier = Classifier(UNIVERSAL_KEYWORDS, UNIVERSAL_PATTERNS,
 prompts=[]
 
 for file in os.listdir(PROMPTS_DIR):
-           prompts.append(read_file_to_string(f"{PROMPTS_DIR}/{file}"))
+           prompts.append(service.read_file_to_string(f"{PROMPTS_DIR}/{file}"))
 
 app = FastAPI(
     title="Document Extraction API",
@@ -37,7 +37,8 @@ app = FastAPI(
 
 # Response Models
 class Response(BaseModel):
-    result: List[Dict[str, Any]]
+    extraction_result: Dict[str, Any]
+    comparison_result: Optional[Dict[str, Any]] = None
     message: str
 
 
@@ -80,14 +81,36 @@ async def extract_from_files(
     try:
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
-        images=await read_files(files)
-        results=service.extract_json(images, prompts)
+        images=[]
+        for file in files:
+        # Validate file type (basic example)
+            allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.gif'}
+            file_extension = f".{file.filename.split('.')[-1].lower()}" if '.' in file.filename else ''
+            if file_extension not in allowed_extensions:
+                logger.warning(f"Unsupported file type: {file_extension}")
+                continue
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as temp_file:
+                try:
+                    content =await file.read()
+                    temp_file.write(content)
+                    temp_file_path = temp_file.name
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Error reading uploaded file: {str(e)}")
+            try:
+                images.extend(classifier.open_file_as_image(temp_file_path))
+            finally:
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+        #Logic here
+        results=service.extract(images, prompts)
+
+
         if not results:
             raise HTTPException(status_code=400, detail="No valid files processed")
         
         return Response(
-            result=results,
-            message=f"Successfully processed {len(results)} file(s)"
+            extraction_result=results,
+            message=f"Successfully processed {len(files)} file(s)"
         )
            
     except Exception as e:
@@ -105,13 +128,35 @@ async def extract_and_compare(
     try:
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
-        images=await read_files(files)
-        results=service.extract_and_compare(images, prompts, json.loads(form_data))
-        if not results:
+        images=[]
+        for file in files:
+        # Validate file type (basic example)
+            allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.gif'}
+            file_extension = f".{file.filename.split('.')[-1].lower()}" if '.' in file.filename else ''
+            if file_extension not in allowed_extensions:
+                logger.warning(f"Unsupported file type: {file_extension}")
+                continue
+            with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as temp_file:
+                try:
+                    content =await file.read()
+                    temp_file.write(content)
+                    temp_file_path = temp_file.name
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Error reading uploaded file: {str(e)}")
+            try:
+                images.extend(classifier.open_file_as_image(temp_file_path))
+            finally:
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
+        #Logic here
+        extraction_result, comparison_result = service.extract_and_compare(images, prompts, json.loads(form_data))
+
+        if not extraction_result:
             raise HTTPException(status_code=400, detail="No valid files processed")
         return Response(
-            result=results,
-            message=f"Successfully processed {len(results)} file(s)"
+            extraction_result=extraction_result,
+            comparison_result=comparison_result,
+            message=f"Successfully processed {len(files)} file(s)"
         )
            
     except Exception as e:

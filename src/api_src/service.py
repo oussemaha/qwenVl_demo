@@ -1,25 +1,26 @@
 
 from http.client import HTTPException
-from src.featureExtraction_Validation.ocr import OCRProcessor
-from src.featureExtraction_Validation.json_validator import JSONComparator
-from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
+#from src.featureExtraction_Validation.ocr import OCRProcessor
+#from src.featureExtraction_Validation.json_validator import JSONComparator
+#from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
 from configs.constants import *
 
 import logging
 
 
 class Service:
-    
+    """
     def __init__(self):
         self.ai_engine=GemmaImageProcessor(MODEL_NAME)
         self.ocr_processor=OCRProcessor()
         logging.basicConfig(level=logging.INFO)
         self.logger =logging.getLogger(__name__)
         self.validator=JSONComparator(self.ai_engine)
-
+"""
         
     def extract(self, images, prompts): 
-        
+        return {"hola": "mundo"}
+        """
         try:
             llm_json = dict()
             ocr_text = " "
@@ -36,13 +37,16 @@ class Service:
             return llm_json
         except Exception as e:
             raise HTTPException(status_code=500, detail="error during data extraction")
+        """
     def extract_and_compare(self, images, prompts, reference_json):
+        return {"hola": "mundo"},{"hola": "mundo"}
+        """
         extracted_data = self.extract(images, prompts)
         comparison_result = self.validator.compare_jsons(reference_json, extracted_data)
-        return comparison_result
-
+        return extracted_data, comparison_result
+        """
     
-    def read_file_to_string( file_path: str) -> str:
+    def read_file_to_string( self,file_path: str) -> str:
             """
             Read content from a file and return as string.
 
