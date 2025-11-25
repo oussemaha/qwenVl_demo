@@ -19,8 +19,7 @@ class Service:
 """
         
     def extract(self, images, prompts): 
-        return {"hola": "mundo"}
-        """
+
         try:
             llm_json = dict()
             ocr_text = " "
@@ -37,14 +36,13 @@ class Service:
             return llm_json
         except Exception as e:
             raise HTTPException(status_code=500, detail="error during data extraction")
-        """
+        
     def extract_and_compare(self, images, prompts, reference_json):
-        return {"hola": "mundo"},{"hola": "mundo"}
-        """
+
         extracted_data = self.extract(images, prompts)
         comparison_result = self.validator.compare_jsons(reference_json, extracted_data)
         return extracted_data, comparison_result
-        """
+       
     
     def read_file_to_string( self,file_path: str) -> str:
             """
