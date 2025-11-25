@@ -1,22 +1,22 @@
 
 from http.client import HTTPException
-#from src.featureExtraction_Validation.ocr import OCRProcessor
-#from src.featureExtraction_Validation.json_validator import JSONComparator
-#from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
+from src.featureExtraction_Validation.ocr import OCRProcessor
+from src.featureExtraction_Validation.json_validator import JSONComparator
+from src.featureExtraction_Validation.gemma_extraction import GemmaImageProcessor
 from configs.constants import *
 
 import logging
 
 
 class Service:
-    """
+    
     def __init__(self):
         self.ai_engine=GemmaImageProcessor(MODEL_NAME)
         self.ocr_processor=OCRProcessor()
         logging.basicConfig(level=logging.INFO)
         self.logger =logging.getLogger(__name__)
         self.validator=JSONComparator(self.ai_engine)
-"""
+
         
     def extract(self, images, prompts): 
 

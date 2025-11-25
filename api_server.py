@@ -71,7 +71,7 @@ def read_files(files):
     return images
 #Controller
 
-@app.post("/extract", response_model=Response)
+@app.post("/api/extract", response_model=Response)
 async def extract_from_files(
     files: List[UploadFile] = File(..., description="Files to extract data from")
 ):
@@ -117,7 +117,7 @@ async def extract_from_files(
         logger.error(f"Error in extraction: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Extraction failed: {str(e)}")
 
-@app.post("/extract_and_compare", response_model=Response)
+@app.post("/api/extract_and_compare", response_model=Response)
 async def extract_and_compare(
     files: List[UploadFile] = File(..., description="Files to extract data from"),
     form_data: str = Form(..., description="JSON form data to compare against")

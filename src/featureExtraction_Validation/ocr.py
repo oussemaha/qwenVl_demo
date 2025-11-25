@@ -9,7 +9,10 @@ class OCRProcessor:
                         use_textline_orientation=False)
 
     def extract_text(self, image):
-        result = self.ocr.predict(
-            input=image)
-        
-        return result[0]["rec_texts"]
+        try:
+            result = self.ocr.predict(
+                input=image)
+            return result[0]["rec_texts"]
+        except Exception as e:
+            print(f"Error during OCR extraction: {e}")
+            return ""
