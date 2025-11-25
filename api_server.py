@@ -82,6 +82,7 @@ async def extract_from_files(
         if not files:
             raise HTTPException(status_code=400, detail="No files provided")
         images=[]
+
         for file in files:
         # Validate file type (basic example)
             allowed_extensions = {'.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.gif'}
@@ -89,6 +90,8 @@ async def extract_from_files(
             if file_extension not in allowed_extensions:
                 logger.warning(f"Unsupported file type: {file_extension}")
                 continue
+            
+
             with tempfile.NamedTemporaryFile(delete=False, suffix=file.filename) as temp_file:
                 try:
                     content =await file.read()
@@ -97,12 +100,16 @@ async def extract_from_files(
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=f"Error reading uploaded file: {str(e)}")
             try:
+
                 images.extend(classifier.open_file_as_image(temp_file_path))
             finally:
                 if os.path.exists(temp_file_path):
                     os.unlink(temp_file_path)
+        
+
         #Logic here
         results=service.extract(images, prompts)
+        
 
 
         if not results:
@@ -148,6 +155,7 @@ async def extract_and_compare(
             finally:
                 if os.path.exists(temp_file_path):
                     os.unlink(temp_file_path)
+        
         #Logic here
         extraction_result, comparison_result = service.extract_and_compare(images, prompts, json.loads(form_data))
 
@@ -174,4 +182,4 @@ async def health_check():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

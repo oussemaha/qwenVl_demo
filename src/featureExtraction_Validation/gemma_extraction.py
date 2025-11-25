@@ -103,7 +103,6 @@ Describe the contents of this image with details. Be verbose.
         
         outputs = self.model.generate(**inputs, max_new_tokens=max_new_tokens)
         generated_text = self.processor.batch_decode(outputs, skip_special_tokens=True)[0]
-        
         return generated_text
     def generate_text_response_without_image(self, prompt: str = None, max_new_tokens: int = 600) -> str:
         """
@@ -160,13 +159,13 @@ Describe the contents of the document in detail.
 """
         for i in images:
             prompt += "<start_of_image>\n"
-        prompt += "<end_of_turn>\n<start_of_turn>model\n"
+        prompt += "<end_of_turn>\n<start_of_turn>modelSMI\n"
 
         
         # Generate response
         generated_text = self.generate_response(images, prompt)
         # Try to parse JSON from response
-        generated_text = generated_text.split("model")[1]
+        generated_text = generated_text.split("modelSMI")[1]
         try:
             result = self.string_to_JSON(generated_text)
             # Ensure all expected fields are present
@@ -210,8 +209,8 @@ Text 1: {text1}
 
 Text 2: {text2}
 <end_of_turn>
-<start_of_turn>model"""
+<start_of_turn>modelSMI"""
         
         generated_text = self.generate_text_response_without_image( prompt= prompt)  # Empty image list
-        response=generated_text.split("model")[1].strip().lower() == "true"
+        response=generated_text.split("modelSMI")[1].strip().lower() == "true"
         return response
